@@ -1,8 +1,8 @@
-streamlit==0.89.0
-streamlit_chat==0.1.1
-langchain==0.2.1
-pdfplumber==0.5.28
-pandas==1.3.2
-openai==0.11.3
-tqdm==4.62.3
-python-dotenv==0.19.0
+streamlit
+streamlit_chat
+langchain
+pdfplumber
+pandas
+openai
+tqdm
+python-dotenv
