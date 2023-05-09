@@ -7,3 +7,4 @@ openai
 tqdm
 python-dotenv
 pypdf
+tiktoken
