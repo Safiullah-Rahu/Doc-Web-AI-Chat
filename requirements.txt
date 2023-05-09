@@ -8,3 +8,4 @@ tqdm
 python-dotenv
 pypdf
 tiktoken
+faiss-cpu
