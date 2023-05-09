@@ -6,3 +6,4 @@ pandas
 openai
 tqdm
 python-dotenv
+pypdf
