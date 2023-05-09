@@ -791,6 +791,7 @@ elif selected_function == "Chat with Docs + Web Search":
         )
         if user_serpapi_key:
             st.sidebar.success("Serp API keys loaded", icon="🚀")
+    os.environ["OPENAI_API_KEY"] = user_api_key
     doc_search(temperature)
 else:
     st.warning("You haven't selected any AI Chat!!")
