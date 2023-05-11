@@ -74,44 +74,26 @@ class Utilities:
         """
         Handles the file upload and displays the uploaded file
         """
-        uploaded_file = st.sidebar.file_uploader("upload", type=["csv", "pdf", "txt"], label_visibility="collapsed")
+        uploaded_file = st.sidebar.file_uploader("upload", type=["pdf"], label_visibility="collapsed", accept_multiple_files = True)
         if uploaded_file is not None:
-
-            def show_csv_file(uploaded_file):
-                file_container = st.expander("Your CSV file :")
-                uploaded_file.seek(0)
-                shows = pd.read_csv(uploaded_file)
-                file_container.write(shows)
 
             def show_pdf_file(uploaded_file):
                 file_container = st.expander("Your PDF file :")
-                with pdfplumber.open(uploaded_file) as pdf:
-                    pdf_text = ""
-                    for page in pdf.pages:
-                        pdf_text += page.extract_text() + "\n\n"
-                file_container.write(pdf_text)
+                for i in range(len(uploaded_file)):
+                    with pdfplumber.open(uploaded_file[i]) as pdf:
+                        pdf_text = ""
+                        for page in pdf.pages:
+                            pdf_text += page.extract_text() + "\n\n"
+                    file_container.write(pdf_text)
             
-            def show_txt_file(uploaded_file):
-                file_container = st.expander("Your TXT file :")
-                file_container.write(uploaded_file)
-            
-            def get_file_extension(uploaded_file):
-                return os.path.splitext(uploaded_file)[1].lower()
-            
-            file_extension = get_file_extension(uploaded_file.name)
+            file_extension = ".pdf" 
 
-            # Show the contents of the file based on its extension
-            if file_extension == ".csv" :
-                show_csv_file(uploaded_file)
-            elif file_extension== ".pdf" : 
+            if file_extension== ".pdf" : 
                 show_pdf_file(uploaded_file)
-            elif file_extension== ".pdf" : 
-                show_txt_file(uploaded_file)
 
         else:
             st.sidebar.info(
-                "👆 Upload your CSV or PDF file to get started..!"
-                #"CSV sample for try : [fishfry-locations.csv](https://drive.google.com/file/d/1TpP3thVnTcDO1_lGSh99EKH2iF3GDE7_/view?usp=sharing),"
+                "👆 Upload your PDF file to get started..!"
             )
             st.session_state["reset_chat"] = True
 
@@ -119,18 +101,19 @@ class Utilities:
         return uploaded_file
 
     @staticmethod
-    def setup_chatbot(uploaded_file, model, temperature,
-                      ):
+    def setup_chatbot(uploaded_file, model, temperature,):
         """
         Sets up the chatbot with the uploaded file, model, and temperature
         """
         embeds = Embedder()
-
+        # Use RecursiveCharacterTextSplitter as the default and only text splitter
+        splitter_type = "RecursiveCharacterTextSplitter"
         with st.spinner("Processing..."):
-            uploaded_file.seek(0)
-            file = uploaded_file.read()
+            #uploaded_file.seek(0)
+            file = uploaded_file
+            
             # Get the document embeddings for the uploaded file
-            vectors = embeds.getDocEmbeds(file, uploaded_file.name)
+            vectors = embeds.getDocEmbeds(file, "Docs")
 
             # Create a Chatbot instance with the specified model and temperature
             chatbot = Chatbot(model, temperature,vectors)
@@ -231,10 +214,6 @@ class Sidebar:
         
     def csv_agent_button(self, uploaded_file):
         st.session_state.setdefault("show_csv_agent", False)
-        
-        if uploaded_file and os.path.splitext(uploaded_file.name)[1].lower() == ".csv":
-            if st.sidebar.button("CSV Agent"):
-                st.session_state["show_csv_agent"] = not st.session_state["show_csv_agent"]
 
     def show_options(self, uploaded_file):
         with st.sidebar.expander("🛠️ Tools", expanded=False):
@@ -246,7 +225,7 @@ class Sidebar:
             st.session_state.setdefault("model", model_name)
             st.session_state.setdefault("temperature", temperature)
 
-
+original_filename="Docs"
 class Embedder:
 
     def __init__(self):
@@ -260,20 +239,14 @@ class Embedder:
         if not os.path.exists(self.PATH):
             os.mkdir(self.PATH)
 
-    def storeDocEmbeds(self, file, original_filename):
+    def storeDocEmbeds(self, file, original_filename="Docs"):
         """
         Stores document embeddings using Langchain and FAISS
         """
         with tempfile.NamedTemporaryFile(mode="wb", delete=False) as tmp_file:
             tmp_file.write(file)
             tmp_file_path = tmp_file.name
-            
-        def get_file_extension(uploaded_file):
-            file_extension =  os.path.splitext(uploaded_file)[1].lower()
-            #if file_extension not in [".csv", ".pdf"]:
-            #    raise ValueError("Unsupported file type. Only CSV and PDF files are allowed.")
-            
-            return file_extension
+
         
         text_splitter = RecursiveCharacterTextSplitter(
                 # Set a really small chunk size, just to show.
@@ -281,20 +254,13 @@ class Embedder:
                 chunk_overlap  = 50,
                 length_function = len,
             )
-        file_extension = get_file_extension(original_filename)
+        file_extension = ".pdf" #get_file_extension(original_filename)
 
-        if file_extension == ".csv":
-            loader = CSVLoader(file_path=tmp_file_path, encoding="utf-8",csv_args={
-                'delimiter': ',',})
-            data = loader.load()
 
-        elif file_extension == ".pdf":
+        if file_extension == ".pdf":
             loader = PyPDFLoader(file_path=tmp_file_path)  
             data = loader.load_and_split(text_splitter)
         
-        elif file_extension == ".txt":
-            loader = TextLoader(file_path=tmp_file_path, encoding="utf-8")
-            data = loader.load_and_split(text_splitter)
             
         embeddings = OpenAIEmbeddings()
 
@@ -310,13 +276,17 @@ class Embedder:
         """
         Retrieves document embeddings
         """
-        if not os.path.isfile(f"{self.PATH}/{original_filename}.pkl"):
-            self.storeDocEmbeds(file, original_filename)
+        # Use RecursiveCharacterTextSplitter as the default and only text splitter
+        splitter_type = "RecursiveCharacterTextSplitter"
+        # Load and process the uploaded PDF or TXT files.
+        loaded_text = load_docs(file)
+        #st.write("Documents uploaded and processed.")
 
-        # Load the vectors from the pickle file
-        with open(f"{self.PATH}/{original_filename}.pkl", "rb") as f:
-            vectors = pickle.load(f)
-        
+        # Split the document into chunks
+        splits = split_texts(loaded_text, chunk_size=1000,
+                             overlap=0, split_method=splitter_type)
+        embeddings = OpenAIEmbeddings()
+        vectors = create_retriever(embeddings, splits, retriever_type="SIMILARITY SEARCH")
         return vectors
 
 class ChatHistory:
@@ -335,11 +305,11 @@ class ChatHistory:
         st.session_state["user"] = [self.default_greeting()]
 
     def initialize_assistant_history(self, uploaded_file):
-        st.session_state["assistant"] = [self.default_prompt(uploaded_file.name)]
+        st.session_state["assistant"] = [self.default_prompt(original_filename)]
 
     def initialize(self, uploaded_file):
         if "assistant" not in st.session_state:
-            self.initialize_assistant_history(uploaded_file)
+            self.initialize_assistant_history(original_filename)
         if "user" not in st.session_state:
             self.initialize_user_history()
 
@@ -347,7 +317,7 @@ class ChatHistory:
         st.session_state["history"] = []
         
         self.initialize_user_history()
-        self.initialize_assistant_history(uploaded_file)
+        self.initialize_assistant_history(original_filename)
         st.session_state["reset_chat"] = False
 
     def append(self, mode, message):
@@ -390,8 +360,8 @@ class Chatbot:
         Standalone question:"""
     CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(_template)
 
-    qa_template = """You are a friendly conversational assistant named Robby, designed to answer questions and chat with the user from a contextual file.
-        You receive data from a user's file and a question, you must help the user find the information they need. 
+    qa_template = """You are a friendly conversational assistant, designed to answer questions and chat with the user from a contextual file.
+        You receive data from a user's files and a question, you must help the user find the information they need. 
         Your answers must be user-friendly and respond to the user in the language they speak to you.
         question: {question}
         =========
@@ -405,7 +375,7 @@ class Chatbot:
         """
         llm = ChatOpenAI(model_name=model_name, temperature=temperature)
 
-        retriever = self.vectors.as_retriever()
+        retriever = self.vectors#.as_retriever()
 
         question_generator = LLMChain(llm=llm, prompt=CONDENSE_QUESTION_PROMPT,verbose=True)
         doc_chain = load_qa_chain(llm=llm, 
@@ -430,11 +400,69 @@ def count_tokens_chain(chain, query):
         result = chain.run(query)
         st.write(f'###### Tokens used in this conversation : {cb.total_tokens} tokens')
     return result 
+# from langchain.vectorstores import Chroma
+# from langchain.document_loaders import UnstructuredPDFLoader
+import PyPDF2
+@st.cache_data
+def load_docs(files):
+    st.sidebar.info("`Reading doc ...`")
+    all_text = ""
+    for file_path in files:
+        file_extension = os.path.splitext(file_path.name)[1]
+        if file_extension == ".pdf":
+            pdf_reader = PyPDF2.PdfReader(file_path)
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+            all_text += text
+        elif file_extension == ".txt":
+            stringio = StringIO(file_path.getvalue().decode("utf-8"))
+            text = stringio.read()
+            all_text += text
+        else:
+            st.warning('Please provide txt or pdf.', icon="⚠️")
+    return all_text
 
+
+
+
+@st.cache_resource
+def create_retriever(_embeddings, splits, retriever_type):
+    if retriever_type == "SIMILARITY SEARCH":
+        try:
+            vectorstore = FAISS.from_texts(splits, _embeddings)
+        except (IndexError, ValueError) as e:
+            st.error(f"Error creating vectorstore: {e}")
+            return
+        retriever = vectorstore.as_retriever(k=5)
+    elif retriever_type == "SUPPORT VECTOR MACHINES":
+        retriever = SVMRetriever.from_texts(splits, _embeddings)
+
+    return retriever
+
+@st.cache_resource
+def split_texts(text, chunk_size, overlap, split_method):
+
+    # Split texts
+    # IN: text, chunk size, overlap, split_method
+    # OUT: list of str splits
+
+    st.sidebar.info("`Splitting doc ...`")
+
+    split_method = "RecursiveTextSplitter"
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, chunk_overlap=overlap)
+
+    splits = text_splitter.split_text(text)
+    if not splits:
+        st.error("Failed to split document")
+        st.stop()
+
+    return splits
 def doc_search(temperature):
     os.environ["SERPAPI_API_KEY"] = user_serpapi_key
     st.sidebar.success("Upload PDF To Chat With!", icon="👇")
-    uploaded_file = st.sidebar.file_uploader("Upload PDF file here!", type="pdf")
+    uploaded_file = st.sidebar.file_uploader("Upload PDF file here!", type="pdf", accept_multiple_files = True)
     if uploaded_file is None:
         st.warning("Upload PDF File first!!")
     else:
@@ -464,8 +492,8 @@ def doc_search(temperature):
         {agent_scratchpad}"""
         def search_chroma(query):
                 #result_docs = vectordb.similarity_search(query)
-                retriever = db.as_retriever(search_type="mmr") # db.similarity_search(query)
-                retrieval_llm = OpenAI(model_name=model_name, temperature=temperature, max_tokens=max_tokens[model_name], top_p=top_p, frequency_penalty=freq_penalty)
+                retriever = db#.as_retriever(search_type="mmr") # db.similarity_search(query)
+                retrieval_llm = ChatOpenAI(model_name=model_name, temperature=temperature, max_tokens=max_tokens[model_name], top_p=top_p, frequency_penalty=freq_penalty)
                 # Initiate our LLM - default is 'gpt-3.5-turbo'
                 llm = ChatOpenAI(model_name = model_name, temperature=temperature)
                 podcast_retriever = RetrievalQA.from_chain_type(llm=retrieval_llm, chain_type="stuff", retriever=retriever)
@@ -495,7 +523,7 @@ def doc_search(temperature):
                     stop=["\nObservation:"], 
                     allowed_tools=multi_tool_names
                 )
-                multi_tool_memory = ConversationBufferWindowMemory(k=2)
+                multi_tool_memory = ConversationBufferWindowMemory(k=1)
                 multi_tool_executor = AgentExecutor.from_agent_and_tools(agent=multi_tool_agent, tools=expanded_tools, verbose=True, memory=multi_tool_memory)
                 output = multi_tool_executor.run(query)
                 return output
@@ -515,38 +543,19 @@ def doc_search(temperature):
                 response = completion.choices[0].message.content
                 return response
 
-        # Set up file upload
-        vec_dir = "embeds"
-        #uploaded_file = st.sidebar.file_uploader("Upload a PDF", type="pdf")
-        #if uploaded_file is not None:
-        filename = uploaded_file.name
-        if not os.path.exists(vec_dir):
-            os.mkdir(vec_dir)
-        # Check if embeddings vectors have already been stored in a pickle file
-        if not os.path.isfile(f"{vec_dir}/{filename}.pkl"):
-            # If not, store the vectors using the storeDocEmbeds function
-            # Write the uploaded file to a temporary file
-            with tempfile.NamedTemporaryFile(mode="wb", delete=False) as tmp_file:
-                tmp_file.write(uploaded_file.read())
-                tmp_file_path = tmp_file.name
+        embeddings = OpenAIEmbeddings()
+        # Use RecursiveCharacterTextSplitter as the default and only text splitter
+        splitter_type = "RecursiveCharacterTextSplitter"
+        loaded_text = load_docs(uploaded_file)
+        st.write("Documents uploaded and processed.")
 
-            loader = PyPDFLoader(tmp_file_path)
-            pages = loader.load_and_split()
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-            docs = text_splitter.split_documents(pages)
-            embeddings = OpenAIEmbeddings()
-            st.sidebar.write('Embedding the document now')
-            db = FAISS.from_documents(docs, embeddings)
-            st.sidebar.write('Document Embedded!')
-            os.remove(tmp_file_path)
-            # Save the vectors to a pickle file
-            with open(f"{vec_dir}/{filename}.pkl", "wb") as f:
-                pickle.dump(db, f)
-        # Load the vectors from the pickle file
-        with open(f"{vec_dir}/{filename}.pkl", "rb") as f:
-            db = pickle.load(f)
-        
-
+        # Split the document into chunks
+        splits = split_texts(loaded_text, chunk_size=1000,
+                             overlap=0, split_method=splitter_type)
+        # Display the number of text chunks
+        num_chunks = len(splits)
+        st.sidebar.write(f"Number of text chunks: {num_chunks}")
+        db = create_retriever(embeddings, splits, retriever_type="SIMILARITY SEARCH")
         st.write("Write your query here:💬")
 
         if 'generated' not in st.session_state:
@@ -628,39 +637,6 @@ def main(temperature):
 
                     history.generate_messages(response_container)
 
-                    # launch CSV Agent if button clicked
-                    if st.session_state["show_csv_agent"]:
-
-                        query = st.text_input(label="Use CSV agent for precise information about the structure of your csv file", 
-                                              placeholder="e-g : how many rows in my file ?"
-                                              )
-                        if query != "":
-
-                            # format the CSV file for the agent
-                            uploaded_file_content = BytesIO(uploaded_file.getvalue())
-
-                            old_stdout = sys.stdout
-                            sys.stdout = captured_output = StringIO()
-
-                            # Create and run the CSV agent with the user's query
-                            agent = create_csv_agent(ChatOpenAI(temperature=0), uploaded_file_content, verbose=True, max_iterations=4)
-                            result = agent.run(query)
-
-                            sys.stdout = old_stdout
-
-                            # Clean up the agent's thoughts to remove unwanted characters
-                            thoughts = captured_output.getvalue()
-                            cleaned_thoughts = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', thoughts)
-                            cleaned_thoughts = re.sub(r'\[1m>', '', cleaned_thoughts)
-
-                            # Display the agent's thoughts
-                            with st.expander("Display the agent's thoughts"):
-                                st.write(cleaned_thoughts)
-                                Utilities.count_tokens_agent(agent, query)
-
-                            st.write(result)
-
-
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
@@ -713,8 +689,8 @@ class CustomOutputParser(AgentOutputParser):
         
         # If it can't parse the output it raises an error
         # You can add your own logic here to handle errors in a different way i.e. pass to a human, give a canned response
-        if not match:
-            raise ValueError(f"Could not parse LLM output: `{llm_output}`")
+        # if not match:
+        #     raise ValueError(f"Could not parse LLM output: `{llm_output}`")
         action = match.group(1).strip()
         action_input = match.group(2)
         
@@ -790,7 +766,7 @@ elif selected_function == "Chat with Docs + Web Search":
             label="#### Enter SERP API key 👇", placeholder="Paste your SERP API key, sk-", type="password"
         )
         if user_serpapi_key:
-            st.sidebar.success("Serp API keys loaded", icon="🚀")
+            st.sidebar.success("Serp API key loaded", icon="🚀")
     os.environ["OPENAI_API_KEY"] = user_api_key
     doc_search(temperature)
 else:
