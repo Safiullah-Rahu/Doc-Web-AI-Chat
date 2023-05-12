@@ -468,20 +468,20 @@ def doc_search(temperature):
     else:
         search = SerpAPIWrapper()
         # Set up a prompt template which can interpolate the history
-        template_with_history = """You are SearchGPT, a professional search engine who provides informative answers to users. Answer the following questions as best you can. You have access to the following tools:
+        template_with_history = """You are SearchGPT, a professional search engine who provides informative answers to users. Answer the following questions in japanese as best you can. You have access to the following tools:
 
         {tools}
 
         Use the following format:
 
-        Question: the input question you must answer
+        Question: the input question you must answer in japanese
         Thought: you should always think about what to do
         Action: the action to take, should be one of [{tool_names}]
         Action Input: the input to the action
         Observation: the result of the action
         ... (this Thought/Action/Action Input/Observation can repeat N times)
         Thought: I now know the final answer
-        Final Answer: the final answer to the original input question
+        Final Answer: the final answer must be in japanese to the original input question
 
         Begin! Remember to give detailed, informative answers
 
@@ -493,7 +493,7 @@ def doc_search(temperature):
         def search_chroma(query):
                 #result_docs = vectordb.similarity_search(query)
                 retriever = db#.as_retriever(search_type="mmr") # db.similarity_search(query)
-                retrieval_llm = ChatOpenAI(model_name=model_name, temperature=temperature, max_tokens=max_tokens[model_name], top_p=top_p, frequency_penalty=freq_penalty)
+                retrieval_llm = ChatOpenAI(model_name=model_name, temperature=temperature, top_p=top_p, frequency_penalty=freq_penalty)
                 # Initiate our LLM - default is 'gpt-3.5-turbo'
                 llm = ChatOpenAI(model_name = model_name, temperature=temperature)
                 podcast_retriever = RetrievalQA.from_chain_type(llm=retrieval_llm, chain_type="stuff", retriever=retriever)
@@ -523,7 +523,7 @@ def doc_search(temperature):
                     stop=["\nObservation:"], 
                     allowed_tools=multi_tool_names
                 )
-                multi_tool_memory = ConversationBufferWindowMemory(k=1)
+                multi_tool_memory = ConversationBufferWindowMemory(k=0)
                 multi_tool_executor = AgentExecutor.from_agent_and_tools(agent=multi_tool_agent, tools=expanded_tools, verbose=True, memory=multi_tool_memory)
                 output = multi_tool_executor.run(query)
                 return output
@@ -542,7 +542,23 @@ def doc_search(temperature):
                 ])
                 response = completion.choices[0].message.content
                 return response
+        def prompt_form():
+            """
+            Displays the prompt form
+            """
+            with st.form(key="my_form", clear_on_submit=True):
+                user_input = st.text_area(
+                    "Query:",
+                    placeholder="Ask me anything about the document...",
+                    key="input_",
+                    label_visibility="collapsed",
+                )
+                submit_button = st.form_submit_button(label="Send")
+                
+                is_ready = submit_button and user_input
+            return is_ready, user_input
 
+        #layout.show_header()
         embeddings = OpenAIEmbeddings()
         # Use RecursiveCharacterTextSplitter as the default and only text splitter
         splitter_type = "RecursiveCharacterTextSplitter"
@@ -563,9 +579,10 @@ def doc_search(temperature):
 
         if 'past' not in st.session_state:
             st.session_state['past'] = ['Hey there!']
-        user_input = get_text()
-        is_readyy = st.button("Send")
-        if is_readyy: # user_input:
+        #user_input = get_text()
+        is_ready, user_input = prompt_form()
+        #is_readyy = st.button("Send")
+        if is_ready: # user_input:
             output = search_chroma(user_input)
             st.session_state.past.append(user_input)
             st.session_state.generated.append(output)
