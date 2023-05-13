@@ -587,10 +587,9 @@ def doc_search(temperature):
         is_ready, user_input = prompt_form()
         #is_readyy = st.button("Send")
         if is_ready: # user_input:
-            with st_stdout("info"):
-                output = search_chroma(user_input)
-                st.session_state.past.append(user_input)
-                st.session_state.generated.append(output)
+            output = search_chroma(user_input)
+            st.session_state.past.append(user_input)
+            st.session_state.generated.append(output)
 
         if st.session_state['generated']:
 
