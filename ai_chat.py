@@ -283,7 +283,7 @@ class Embedder:
         #st.write("Documents uploaded and processed.")
 
         # Split the document into chunks
-        splits = split_texts(loaded_text, chunk_size=4000,
+        splits = split_texts(loaded_text, chunk_size=500,
                              overlap=0, split_method=splitter_type)
         embeddings = OpenAIEmbeddings()
         vectors = create_retriever(embeddings, splits, retriever_type="SIMILARITY SEARCH")
@@ -569,7 +569,7 @@ def doc_search(temperature):
         st.write("Documents uploaded and processed.")
 
         # Split the document into chunks
-        splits = split_texts(loaded_text, chunk_size=4000,
+        splits = split_texts(loaded_text, chunk_size=500,
                              overlap=0, split_method=splitter_type)
         # Display the number of text chunks
         num_chunks = len(splits)
