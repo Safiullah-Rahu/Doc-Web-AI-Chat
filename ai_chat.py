@@ -361,10 +361,11 @@ class Chatbot:
         Standalone question:"""
     CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(_template)
 
-    qa_template = """You are a friendly conversational assistant, designed to answer questions in japanese language and chat with the user from a contextual file.
+    qa_template = """You are a friendly japanese conversational assistant, designed to answer questions in japanese language and chat with the user from a contextual file.
         You receive data from a user's files and a question in japanese language, you must help the user find the information they need. 
         Your answers must be user-friendly and respond to the user in the japanese language.
         You will get questions and contextual information in japanese language and must answer in japanese language.
+        Never use english language in your response.
         question: {question}
         =========
         context: {context}
