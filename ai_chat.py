@@ -283,7 +283,7 @@ class Embedder:
         #st.write("Documents uploaded and processed.")
 
         # Split the document into chunks
-        splits = split_texts(loaded_text, chunk_size=1000,
+        splits = split_texts(loaded_text, chunk_size=4000,
                              overlap=0, split_method=splitter_type)
         embeddings = OpenAIEmbeddings()
         vectors = create_retriever(embeddings, splits, retriever_type="SIMILARITY SEARCH")
@@ -345,6 +345,7 @@ class ChatHistory:
             f.write("\n".join(self.history))
 
 
+from langchain.chains.question_answering import load_qa_chain
 class Chatbot:
 
     def __init__(self, model_name, temperature, vectors):
@@ -353,7 +354,7 @@ class Chatbot:
         self.vectors = vectors
 
 
-    _template = """Given the following conversation and a follow-up question, rephrase the follow-up question to be a standalone question.
+    _template = """Given the following conversation and a follow-up question, rephrase the follow-up question in japanese language to be a standalone question.
         Chat History:
         {chat_history}
         Follow-up entry: {question}
@@ -361,9 +362,9 @@ class Chatbot:
     CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(_template)
 
     qa_template = """You are a friendly conversational assistant, designed to answer questions in japanese language and chat with the user from a contextual file.
-        You receive data from a user's files and a question, you must help the user find the information they need. 
+        You receive data from a user's files and a question in japanese language, you must help the user find the information they need. 
         Your answers must be user-friendly and respond to the user in the japanese language.
-        Must answer in japanese language.
+        You will get questions and contextual information in japanese language and must answer in japanese language.
         question: {question}
         =========
         context: {context}
@@ -383,7 +384,8 @@ class Chatbot:
                                   
                                   prompt=self.QA_PROMPT,
                                   verbose=True,
-                                  chain_type="stuff")
+                                  chain_type= "stuff"
+                                  )
 
         chain = ConversationalRetrievalChain(
             retriever=retriever, combine_docs_chain=doc_chain, question_generator=question_generator, verbose=True, return_source_documents=True)
@@ -452,7 +454,7 @@ def split_texts(text, chunk_size, overlap, split_method):
 
     split_method = "RecursiveTextSplitter"
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size, chunk_overlap=overlap)
+        chunk_size=chunk_size, chunk_overlap=overlap, separators=[" ", ",", "\n"])
 
     splits = text_splitter.split_text(text)
     if not splits:
@@ -567,7 +569,7 @@ def doc_search(temperature):
         st.write("Documents uploaded and processed.")
 
         # Split the document into chunks
-        splits = split_texts(loaded_text, chunk_size=1000,
+        splits = split_texts(loaded_text, chunk_size=4000,
                              overlap=0, split_method=splitter_type)
         # Display the number of text chunks
         num_chunks = len(splits)
