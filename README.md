@@ -1,9 +1,9 @@
-# Doc-Web AI Chat
+# Doc-Web AI Chat 💬🌐
 
 
 Doc-Web AI Chat is the ultimate app powered by LangChain, OpenAI, and Streamlit that allows you to unlock the power of knowledge by effortlessly interacting with your PDFs. With Doc-Web AI Chat, you can seamlessly navigate through your PDF documents, ask questions directly, and augment your search with SERPAPI to gather additional information from the web. Get ready to get accurate and relevant answers to your burning questions in one convenient place.
 
-## Features
+## Features 📚🔎
 
 Doc-Web AI Chat offers the following key features:
 
@@ -33,6 +33,8 @@ To start Doc-Web AI Chat, run the following command:
 streamlit run app.py
 ```
 This command will launch the Doc-Web AI Chat app in your default web browser. You can then start interacting with your PDFs, asking questions, and accessing augmented search capabilities.
+
+<img src="Doc-Web-ai.PNG" alt="Doc-Web AI App Homepage">
 
 ## Feedback and Contributions
 If you have any feedback, suggestions, or issues related to Doc-Web AI Chat, please open an issue on the GitHub repository. Contributions are also welcome! If you would like to contribute to Doc-Web AI Chat, please follow the guidelines outlined in the Contribution Guidelines.
