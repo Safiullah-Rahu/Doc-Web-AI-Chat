@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 To start Doc-Web AI Chat, run the following command:
 ```bash
-streamlit run app.py
+streamlit run ai_chat.py
 ```
 This command will launch the Doc-Web AI Chat app in your default web browser. You can then start interacting with your PDFs, asking questions, and accessing augmented search capabilities.
 
