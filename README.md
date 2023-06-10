@@ -42,4 +42,6 @@ If you have any feedback, suggestions, or issues related to Doc-Web AI Chat, ple
 ## License
 Doc-Web AI Chat is licensed under the MIT License.
 
+---
+
 <p><em>Doc-Web AI Chat is a project powered by <strong>LangChain</strong>, <strong>OpenAI</strong>, and <strong>Streamlit</strong>.</em></p>
