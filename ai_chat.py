@@ -730,7 +730,8 @@ st.set_page_config(layout="wide", page_icon="💬", page_title="AI Chatbot 🤖"
 st.markdown(
             """
             <div style='text-align: center;'>
-                <h1>AI Chat with Docs and Web!💬</h1>
+                <h1>Doc-Web AI Chat 💬</h1>
+                <p>AI Chat with Docs and Web!</p>
             </div>
             """,
             unsafe_allow_html=True,
